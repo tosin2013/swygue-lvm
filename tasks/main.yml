@@ -1,0 +1,54 @@
+---
+- name: ensure lvm2 is installed
+  package:
+    name: lvm2
+
+- name: "checking if /dev/{{ device }} exist"
+  parted: device=/dev/{{ device }} unit=MiB
+  register: device_info
+  
+- name: Create Volume Group
+  lvg:
+    vg: "{{ vgname }}"
+    force: yes
+    pvs: /dev/{{ device }}
+  register: create_vg
+  
+- name: create custom logical volumes
+  lvol:
+    lv: "lv_{{ item.name }}"
+    vg: "{{ vgname }}"
+    state: present
+    size: "{{ item.size }}"
+  with_items: "{{ logical_volumes }}"
+
+- name: ensure filesystems are created
+  filesystem:
+    fstype: "{{ item.fstype }}"
+    dev: "/dev/mapper/{{ vgname }}-lv_{{ item.name }}"
+    opts: "-L {{ item.name }}"
+  with_items: "{{ logical_volumes }}"
+
+- name: Ensure mount points are created
+  file:
+    path: "{{ item.mount_dir }}"
+    state: directory
+  with_items: "{{ logical_volumes }}"
+
+- name: Config mount points in fstab
+  mount:
+    name: "{{ item.mount_dir }}"
+    src: "LABEL={{ item.name }}"
+    fstype: "{{ item.fstype }}"
+    dump: 0
+    passno: 0
+    opts: defaults
+    state: mounted
+  with_items: "{{ logical_volumes }}"
+
+- name: show device info
+  debug:
+    msg: "{{ item.name }}"
+    verbosity: 1
+  with_items: "{{ logical_volumes }}"
+
