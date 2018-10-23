@@ -10,7 +10,7 @@ Requirements
 
 Role Variables
 --------------
-
+```
 device: vdb
 vgname: satdata
 
@@ -23,7 +23,7 @@ logical_volumes:
     size: 50g
     mount_dir: /var/lib/mongodb
     fstype: xfs
-
+```
 
 Dependencies
 ------------
