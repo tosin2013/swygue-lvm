@@ -3,8 +3,8 @@
   package:
     name: lvm2
 
-- name: "checking if /dev/{{ device }} exist"
-  parted: device=/dev/{{ device }} unit=MiB
+- name: "checking if /dev/{{ host_device }} exist"
+  parted: device=/dev/{{ host_device }} unit=MiB
   register: device_info
   
 - name: Create Volume Group
@@ -17,7 +17,7 @@
 - name: create custom logical volumes
   lvol:
     lv: "lv_{{ item.name }}"
-    vg: "{{ vgname }}"
+    vg: "{{ vg_name }}"
     state: present
     size: "{{ item.size }}"
   with_items: "{{ logical_volumes }}"
@@ -25,7 +25,7 @@
 - name: ensure filesystems are created
   filesystem:
     fstype: "{{ item.fstype }}"
-    dev: "/dev/mapper/{{ vgname }}-lv_{{ item.name }}"
+    dev: "/dev/mapper/{{ vg_name }}-lv_{{ item.name }}"
     opts: "-L {{ item.name }}"
   with_items: "{{ logical_volumes }}"
 
