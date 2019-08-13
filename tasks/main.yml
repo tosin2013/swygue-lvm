@@ -11,7 +11,7 @@
   lvg:
     vg: "{{ vgname }}"
     force: yes
-    pvs: /dev/{{ device }}
+    pvs: /dev/{{ host_device }}
   register: create_vg
   
 - name: create custom logical volumes
