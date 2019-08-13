@@ -21,7 +21,7 @@
         Example:
                    sudo vgremove {{ pvs_info.stdout }} -ff -y
                    sudo pvremove /dev/{{ host_device }} -ff -y
-  when: pvs_info.stdout != ""
+  when: pvs_info.stdout != vg_name
 
 - name: list volume groups
   debug: 
