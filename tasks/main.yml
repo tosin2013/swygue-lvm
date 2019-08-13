@@ -11,7 +11,7 @@
   
 - name: Create Volume Group
   lvg:
-    vg: "{{ vgname }}"
+    vg: "{{ vg_name }}"
     force: yes
     pvs: /dev/{{ host_device }}
   register: create_vg
