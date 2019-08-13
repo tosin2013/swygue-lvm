@@ -8,6 +8,26 @@
     device: /dev/{{ host_device }} 
     unit: MiB
   register: device_info
+
+- name: check if /dev/{{ host_device }} has volume group
+  shell: "pvs | awk '/{{ host_device }}/ {print $2}'"
+  register: pvs_info
+
+- fail:
+    msg: |
+        The device /dev/{{ host_device }} already has a volume group {{ pvs_info.stdout }}
+        That does not match the given expected volume group name {{ vg_name }}
+        Either change the value of host_device or remove the volume group {{ pvs_info.stdout }}
+        Example:
+                   sudo vgremove {{ pvs_info.stdout }} -ff -y
+                   sudo pvremove /dev/{{ host_device }} -ff -y
+  when: pvs_info.stdout != ""
+
+- name: list volume groups
+  debug: 
+    var: item
+    verbosity: 2
+  with_dict: "{{ ansible_lvm.vgs }}"
   
 - name: Create Volume Group
   lvg:
