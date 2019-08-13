@@ -4,7 +4,9 @@
     name: lvm2
 
 - name: "checking if /dev/{{ host_device }} exist"
-  parted: device=/dev/{{ host_device }} unit=MiB
+  parted: 
+    device: /dev/{{ host_device }} 
+    unit: MiB
   register: device_info
   
 - name: Create Volume Group
