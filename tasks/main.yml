@@ -13,15 +13,21 @@
   shell: "pvs | awk '/{{ host_device }}/ {print $2}'"
   register: pvs_info
 
+- set_fact:
+    create_vg: "{{ true if pvs_info.stdout == '' and pvs_info.stdout != vg_name else false }}"
+
+- set_fact:
+    current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
+
 - fail:
     msg: |
-        The device /dev/{{ host_device }} already has a volume group {{ pvs_info.stdout }}
-        That does not match the given expected volume group name {{ vg_name }}
-        Either change the value of host_device or remove the volume group {{ pvs_info.stdout }}
-        Example:
-                   sudo vgremove {{ pvs_info.stdout }} -ff -y
+        The device /dev/{{ host_device }} already has a volume group name {{ current_vg }}
+        that does not match the given expected volume group name {{ vg_name }}
+        either change the value of host_device or remove the volume group {{ current_vg }}
+        Example:   
+                   sudo vgremove {{ current_vg }} -ff -y
                    sudo pvremove /dev/{{ host_device }} -ff -y
-  when: pvs_info.stdout != vg_name
+  when: not create_vg|bool
 
 - name: list volume groups
   debug: 
