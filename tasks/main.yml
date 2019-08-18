@@ -27,7 +27,7 @@
         Example:   
                    sudo vgremove {{ current_vg }} -ff -y
                    sudo pvremove /dev/{{ host_device }} -ff -y
-  when: not create_vg|bool
+  when: create_vg|bool
 
 - name: list volume groups
   debug: 
