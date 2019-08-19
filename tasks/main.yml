@@ -25,7 +25,7 @@
     current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
 
 - set_fact:
-    create_lv: "{{ true if lvs_info is null }}"
+    create_lv: "{{ true if lvs_info == '' }}"
 
 - fail:
     msg: |
