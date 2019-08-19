@@ -57,18 +57,20 @@
   with_items: "{{ logical_volumes }}"
   when: lvs_info is not defined
 
-- name: ensure filesystems are created
+- name: Ensure filesystems are created
   filesystem:
     fstype: "{{ item.fstype }}"
     dev: "/dev/mapper/{{ vg_name }}-lv_{{ item.name }}"
     opts: "-L {{ item.name }}"
   with_items: "{{ logical_volumes }}"
+  when: lvs_info is not defined
 
 - name: Ensure mount points are created
   file:
     path: "{{ item.mount_dir }}"
     state: directory
   with_items: "{{ logical_volumes }}"
+  when: lvs_info is not defined
 
 - name: Config mount points in fstab
   mount:
