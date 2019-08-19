@@ -13,11 +13,18 @@
   shell: "pvs | awk '/{{ host_device }}/ {print $2}'"
   register: pvs_info
 
+- name: check if logical volume exist
+  shell: lvs | grep "{{ item.name }}"
+  register: lvs_info
+
 - set_fact:
     create_vg: "{{ true if pvs_info.stdout == '' and pvs_info.stdout != vg_name else false }}"
 
 - set_fact:
     current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
+
+- set_fact:
+    create_lv: "{{ true if lvs_info.stdout == '' }}"
 
 - fail:
     msg: |
@@ -40,8 +47,9 @@
     vg: "{{ vg_name }}"
     force: yes
     pvs: /dev/{{ host_device }}
-  register: create_vg
-  
+  #register: create_vg
+  when: create_vg|bool
+
 - name: create custom logical volumes
   lvol:
     lv: "lv_{{ item.name }}"
@@ -49,6 +57,7 @@
     state: present
     size: "{{ item.size }}"
   with_items: "{{ logical_volumes }}"
+  when: create_lv|bool
 
 - name: ensure filesystems are created
   filesystem:
