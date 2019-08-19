@@ -14,7 +14,7 @@
   register: pvs_info
 
 - name: check if logical volume exist
-  shell: lvs | grep "{{ item.name }}"
+  shell: "lvs | grep {{ item.name }} | awk '{ print $1 }'"
   with_items: "{{ logical_volumes }}"
   register: lvs_info
 
