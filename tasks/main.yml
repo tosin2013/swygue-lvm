@@ -24,9 +24,6 @@
 - set_fact:
     current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
 
-- set_fact:
-    create_lv: "{{ true if lvs_info == '' }}"
-
 - fail:
     msg: |
         The device /dev/{{ host_device }} already has a volume group name {{ current_vg }}
@@ -58,7 +55,7 @@
     state: present
     size: "{{ item.size }}"
   with_items: "{{ logical_volumes }}"
-  when: create_lv|bool
+  when: lvs_info is not defined
 
 - name: ensure filesystems are created
   filesystem:
