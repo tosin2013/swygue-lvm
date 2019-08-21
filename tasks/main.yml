@@ -75,7 +75,7 @@
 - name: Config mount points in fstab
   mount:
     name: "{{ item.mount_dir }}"
-    src: "LABEL={{ item.name }}"
+    src: "/dev/mapper/{{ vg_name }}-lv_{{ item.name }}"
     fstype: "{{ item.fstype }}"
     dump: 0
     passno: 0
