@@ -1,0 +1,82 @@
+---
+- name: ensure lvm2 is installed
+  package:
+    name: lvm2
+
+- name: "checking if /dev/{{ host_device }} exist"
+  parted: 
+    device: /dev/{{ host_device }} 
+    unit: MiB
+  register: device_info
+
+- debug:
+    var: device_info
+    verbosity: 2
+
+- name: check if /dev/{{ host_device }} has a formatet partition
+  shell: "pvs | awk '/\/dev\/{{ host_device }}p1/ {print $1}'"
+  register: pvs_info
+
+- debug:
+    var: pvs_info
+    verbosity: 2
+
+- name: check which vg is assigned to /dev/{{ host_device }}
+  shell: "pvs | awk '/\/dev\/{{ host_device }}p1/ {print $2}'"
+  register: vgs_info
+
+- debug:
+    var: vgs_info
+    verbosity: 2
+
+- name: check if qubinode logical volume exist
+  shell: "lvs | awk '/{{ item.name }}/ {print $1}'" 
+  with_items: "{{ logical_volumes }}"
+  register: lvs_info
+
+- debug:
+    var: lvs_info
+    verbosity: 2
+
+- name: check if libvirt filesystem is mounted
+  shell: >
+    "mountpoint -q {{ item.mount_dir }}"
+  with_items: "{{ logical_volumes }}"
+  register: libvirtfs_mounted
+
+- debug:
+    var: libvirtfs_mounted
+    verbosity: 2
+
+- name: check libvirt filesystem size
+  shell: >
+    "df -h {{ item.mount_dir }}| grep -v Filesystem | awk '{ print $4 }' | tr -d 'G'"
+  with_items: "{{ logical_volumes }}"
+  register: libvirtfs_size
+
+- debug:
+    var: libvirtfs_size
+    verbosity: 2
+
+- set_fact:
+    create_vg: "{{ true if vgs_info.stdout == '' and pvs_info.stdout == '' else false }}"
+
+#- set_fact:
+#    current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
+
+# - fail:
+#     msg: |
+#         The device /dev/{{ host_device }} already has a volume group name {{ current_vg }}
+#         that does not match the given expected volume group name {{ vg_name }}
+#         either change the value of host_device or remove the volume group {{ current_vg }}
+#         Example:   
+#                    sudo vgremove {{ current_vg }} -ff -y
+#                    sudo pvremove /dev/{{ host_device }} -ff -y
+#   when: create_vg|bool
+
+- fail:
+    msg: |
+        The libvirt image directory does not meet the minimum treshhold 
+        of 954G in order to continue with the qubinode installation
+  when: libvirtfs_size.stdout|int < 453
+  become: True
