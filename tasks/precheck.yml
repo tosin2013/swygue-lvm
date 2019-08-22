@@ -56,9 +56,11 @@
     "df -h {{ item.mount_dir }}| grep -v Filesystem | awk '{ print $4 }' | tr -d 'G'"
   with_items: "{{ logical_volumes }}"
   register: libvirtfs_size
+  ignore_errors: True
+  become: True
 
 - debug:
-    var: libvirtfs_size
+    var: libvirtfs_size.stdout
     verbosity: 2
 
 - set_fact:
