@@ -1,0 +1,65 @@
+---
+- name: list volume groups
+  debug: 
+    var: item
+    verbosity: 2
+  with_dict: "{{ ansible_lvm.vgs }}"
+  when: create_vg|bool
+  become: True
+
+- name: Create Volume Group
+  lvg:
+    vg: "{{ vg_name }}"
+    force: yes
+    pvs: /dev/{{ host_device }}
+  #register: create_vg
+  when: create_vg|bool 
+  become: True
+
+- name: create custom logical volumes
+  lvol:
+    lv: "lv_{{ item.name }}"
+    vg: "{{ vg_name }}"
+    state: present
+    size: "{{ item.size }}"
+  with_items: "{{ logical_volumes }}"
+  when: create_vg|bool 
+  become: True
+
+- name: Ensure filesystems are created
+  filesystem:
+    fstype: "{{ item.fstype }}"
+    dev: "/dev/mapper/{{ vg_name }}-lv_{{ item.name }}"
+    opts: "-L {{ item.name }}"
+  with_items: "{{ logical_volumes }}"
+  when: create_vg|bool 
+  become: True
+
+- name: Ensure mount points are created
+  file:
+    path: "{{ item.mount_dir }}"
+    state: directory
+  with_items: "{{ logical_volumes }}"
+  when: create_vg|bool
+  become: True
+
+- name: Config mount points in fstab
+  mount:
+    name: "{{ item.mount_dir }}"
+    src: "/dev/mapper/{{ vg_name }}-lv_{{ item.name }}"
+    fstype: "{{ item.fstype }}"
+    dump: 0
+    passno: 0
+    opts: defaults
+    state: mounted
+  with_items: "{{ logical_volumes }}"
+  when: libvirtfs_mounted is not defined and create_vg|bool
+  become: True
+
+- name: show device info
+  debug:
+    msg: "{{ item.name }}"
+    verbosity: 1
+  with_items: "{{ logical_volumes }}"
+  when: create_vg|bool
+  become: True
