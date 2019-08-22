@@ -52,15 +52,16 @@
     verbosity: 2
 
 - name: check libvirt filesystem size
-  shell: >
-    "df -h {{ item.mount_dir }}| grep -v Filesystem | awk '{ print $4 }' | tr -d 'G'"
+  shell: "df -h {{ item.mount_dir }}| grep -v Filesystem | awk '{ print $4 }' | tr -d 'G'"
+  args:
+   executable: /bin/bash
   with_items: "{{ logical_volumes }}"
   register: libvirtfs_size
   ignore_errors: True
   become: True
 
 - debug:
-    var: libvirtfs_size.stdout
+    var: libvirtfs_size
     verbosity: 2
 
 - set_fact:
@@ -83,5 +84,5 @@
     msg: |
         The libvirt image directory does not meet the minimum treshhold 
         of 954G in order to continue with the qubinode installation
-  when: libvirtfs_size.stdout|int < 453
+  when: libvirtfs_size|int < 453
   become: True
