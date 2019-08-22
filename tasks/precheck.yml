@@ -43,6 +43,9 @@
     "mountpoint -q {{ item.mount_dir }}"
   with_items: "{{ logical_volumes }}"
   register: libvirtfs_mounted
+  failed_when: False
+  changed_when: False
+  ignore_errors: True
 
 - debug:
     var: libvirtfs_mounted
