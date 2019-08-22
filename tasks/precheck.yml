@@ -84,5 +84,5 @@
     msg: |
         The libvirt image directory does not meet the minimum treshhold 
         of 954G in order to continue with the qubinode installation
-  when: libvirtfs_size|int < 453
+  when: libvirtfs_size|int < 453 and not create_vg|bool
   become: True
