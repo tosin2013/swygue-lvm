@@ -53,7 +53,7 @@
     opts: defaults
     state: mounted
   with_items: "{{ logical_volumes }}"
-  when: libvirtfs_mounted is not defined and create_vg|bool
+  when: libvirtfs_mounted is not defined or create_vg|bool
   become: True
 
 - name: show device info
