@@ -14,7 +14,9 @@
     verbosity: 2
 
 - name: check if /dev/{{ host_device }} has a formated partition
-  shell: "pvs | awk '/2fdev2f{{ host_device }}p1/ {print $1}'"
+  shell: "pvs | awk '/2fdev2f{{ host_device }}/ {print $1}'"
+  args:
+   executable: /bin/bash
   register: pvs_info
 
 - debug:
@@ -22,15 +24,29 @@
     verbosity: 2
 
 - name: check which vg is assigned to /dev/{{ host_device }}
-  shell: "pvs | awk '/2fdev2f{{ host_device }}p1/ {print $2}'"
+  shell: "pvs | awk '/2fdev2f{{ host_device }}/ {print $2}'"
+  args:
+   executable: /bin/bash
   register: vgs_info
 
 - debug:
     var: vgs_info
     verbosity: 2
 
-- name: check if qubinode logical volume exist
+- name: check space left on on {{ vgs_info.stdout }}
+  shell: "vgs vg_qubi | grep -v VG | awk  '{print $7 }'"
+  args:
+   executable: /bin/bash
+  register: vgs_space_left
+
+- debug:
+    var: vgs_space_left 
+    verbosity: 2
+
+- name: check if {{ item.name }} logical volume exist
   shell: "lvs | awk '/{{ item.name }}/ {print $1}'" 
+  args:
+   executable: /bin/bash
   with_items: "{{ logical_volumes }}"
   register: lvs_info
 
@@ -38,51 +54,57 @@
     var: lvs_info
     verbosity: 2
 
-- name: check if libvirt filesystem is mounted
+- name: check if filesystem is mounted
   shell: >
     "mountpoint -q {{ item.mount_dir }}"
+  args:
+   executable: /bin/bash
   with_items: "{{ logical_volumes }}"
-  register: libvirtfs_mounted
+  register: fs_mounted
   failed_when: False
   changed_when: False
   ignore_errors: True
 
 - debug:
-    var: libvirtfs_mounted
+    var: fs_mounted
     verbosity: 2
 
-- name: check libvirt filesystem size
-  shell: "df -h {{ item.mount_dir }}| grep -v Filesystem | awk '{ print $4 }' | tr -d 'G'"
+- name: check filesystem size
+  shell: > 
+    "df -h {{ item.mount_dir }}| grep -v Filesystem | awk '{ print $4 }' | awk '{print substr($0,1,length-1)}'"
   args:
    executable: /bin/bash
   with_items: "{{ logical_volumes }}"
-  register: libvirtfs_size
+  register: fs_size
   ignore_errors: True
   become: True
 
 - debug:
-    var: libvirtfs_size
+    var: fs_size
     verbosity: 2
 
 - set_fact:
     create_vg: "{{ true if vgs_info.stdout == '' and pvs_info.stdout == '' else false }}"
 
+- set_fact:
+    create_lv: "{{ true if lvs_info.stdout == '' and fs_size.stdout|int >= fs_min_size.stdout|int }}"
+
 #- set_fact:
 #    current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
 
-# - fail:
-#     msg: |
-#         The device /dev/{{ host_device }} already has a volume group name {{ current_vg }}
-#         that does not match the given expected volume group name {{ vg_name }}
-#         either change the value of host_device or remove the volume group {{ current_vg }}
-#         Example:   
-#                    sudo vgremove {{ current_vg }} -ff -y
-#                    sudo pvremove /dev/{{ host_device }} -ff -y
-#   when: create_vg|bool
+- fail:
+    msg: |
+        The device /dev/{{ host_device }} already has a volume group name {{ current_vg }}
+        that does not match the given expected volume group name {{ vg_name }}
+        either change the value of host_device or remove the volume group {{ current_vg }}
+        Example:   
+                   sudo vgremove {{ current_vg }} -ff -y
+                   sudo pvremove /dev/{{ host_device }} -ff -y
+  when: not create_vg|bool
 
 - fail:
     msg: |
-        The libvirt image directory does not meet the minimum treshhold 
-        of 954G in order to continue with the qubinode installation
-  when: libvirtfs_size|int < 453 and not create_vg|bool
+        The current file system does not meet the minimum treshhold 
+        of {{ fs_min_size }} in order to continue with with creating the lvm
+  when: not create_lv|bool
   become: True

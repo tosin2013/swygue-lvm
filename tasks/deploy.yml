@@ -12,7 +12,6 @@
     vg: "{{ vg_name }}"
     force: yes
     pvs: /dev/{{ host_device }}
-  #register: create_vg
   when: create_vg|bool 
   become: True
 
@@ -23,7 +22,7 @@
     state: present
     size: "{{ item.size }}"
   with_items: "{{ logical_volumes }}"
-  when: create_vg|bool 
+  when: create_vg|bool and create_lv|bool
   become: True
 
 - name: Ensure filesystems are created
@@ -32,7 +31,7 @@
     dev: "/dev/mapper/{{ vg_name }}-lv_{{ item.name }}"
     opts: "-L {{ item.name }}"
   with_items: "{{ logical_volumes }}"
-  when: create_vg|bool 
+  when: create_vg|bool and create_lv|bool
   become: True
 
 - name: Ensure mount points are created
@@ -40,7 +39,7 @@
     path: "{{ item.mount_dir }}"
     state: directory
   with_items: "{{ logical_volumes }}"
-  when: create_vg|bool
+  #when: create_vg|bool
   become: True
 
 - name: Config mount points in fstab
@@ -53,7 +52,7 @@
     opts: defaults
     state: mounted
   with_items: "{{ logical_volumes }}"
-  when: libvirtfs_mounted is not defined or create_vg|bool
+  when: fs_mounted is not defined or create_vg|bool
   become: True
 
 - name: show device info

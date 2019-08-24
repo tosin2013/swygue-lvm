@@ -1,6 +1,6 @@
 ---
-- name: precheck qubinode filesystem
+- name: precheck lvm filesystem
   include_tasks: precheck.yml
 
-- name: deploy qubinode filesystem
+- name: deploy lvm filesystem  
   include_tasks: deploy.yml
