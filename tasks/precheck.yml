@@ -33,64 +33,11 @@
     var: vgs_info
     verbosity: 2
 
-- name: check space left on on {{ vgs_info.stdout }}
-  shell: "vgs vg_qubi | grep -v VG | awk  '{print $7 }'"
-  args:
-   executable: /bin/bash
-  register: vgs_space_left
-
-- debug:
-    var: vgs_space_left 
-    verbosity: 2
-
-- name: check if {{ item.name }} logical volume exist
-  shell: "lvs | awk '/{{ item.name }}/ {print $1}'" 
-  args:
-   executable: /bin/bash
-  with_items: "{{ logical_volumes }}"
-  register: lvs_info
-
-- debug:
-    var: lvs_info
-    verbosity: 2
-
-- name: check if filesystem is mounted
-  shell: >
-    "mountpoint -q {{ item.mount_dir }}"
-  args:
-   executable: /bin/bash
-  with_items: "{{ logical_volumes }}"
-  register: fs_mounted
-  failed_when: False
-  changed_when: False
-  ignore_errors: True
-
-- debug:
-    var: fs_mounted
-    verbosity: 2
-
-- name: check filesystem size
-  shell: > 
-    "df -h {{ item.mount_dir }}| grep -v Filesystem | awk '{ print $4 }' | awk '{print substr($0,1,length-1)}'"
-  args:
-   executable: /bin/bash
-  with_items: "{{ logical_volumes }}"
-  register: fs_size
-  ignore_errors: True
-  become: True
-
-- debug:
-    var: fs_size
-    verbosity: 2
+- set_fact:
+    create_vg: "{{ true if device_info.stdout != '' and vgs_info.stdout == '' and pvs_info.stdout == '' else false }}"
 
 - set_fact:
-    create_vg: "{{ true if vgs_info.stdout == '' and pvs_info.stdout == '' else false }}"
-
-- set_fact:
-    create_lv: "{{ true if lvs_info.stdout == '' and fs_size.stdout|int >= fs_min_size.stdout|int }}"
-
-#- set_fact:
-#    current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
+    current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
 
 - fail:
     msg: |
@@ -101,10 +48,3 @@
                    sudo vgremove {{ current_vg }} -ff -y
                    sudo pvremove /dev/{{ host_device }} -ff -y
   when: not create_vg|bool
-
-- fail:
-    msg: |
-        The current file system does not meet the minimum treshhold 
-        of {{ fs_min_size }} in order to continue with with creating the lvm
-  when: not create_lv|bool
-  become: True

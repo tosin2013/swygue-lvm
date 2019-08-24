@@ -2,4 +2,3 @@
 logical_volumes: []
 host_device: "" 
 vg_name: ""
-fs_min_size: ""
