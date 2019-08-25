@@ -1,5 +1,5 @@
 ---
-- name: precheck lvm filesystem
+- name: check system file system
   include_tasks: precheck.yml
 
 - name: deploy lvm filesystem  
