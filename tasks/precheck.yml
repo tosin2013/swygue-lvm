@@ -14,7 +14,7 @@
 
 
 - name: check if /dev/{{ host_device }} has a formated partition
-  shell: "pvs | awk '\//dev/{{ host_device }}\/ {print $1}'"
+  shell: "pvs | awk '/{{ host_device }}/ {print $1}'"
   args:
    executable: /bin/bash
   register: pvs_info
@@ -24,7 +24,7 @@
 
 
 - name: check which vg is assigned to /dev/{{ host_device }}
-  shell: "pvs | awk '\//dev/{{ host_device }}\/ {print $2}'"
+  shell: "pvs | awk '/{{ host_device }}/ {print $2}'"
   args:
    executable: /bin/bash
   register: vgs_info
