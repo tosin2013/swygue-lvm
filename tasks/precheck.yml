@@ -10,7 +10,7 @@
   register: device_info
 
 - debug:
-    msg: "{{device_info.stdout_line}}"
+    msg: "{{ device_info.stdout }}"
     verbosity: 2
 
 - name: check if /dev/{{ host_device }} has a formated partition
@@ -20,7 +20,7 @@
   register: pvs_info
 
 - debug:
-    msg: "{{ pvs_info.stdout_line}}}"
+    msg: "{{ pvs_info.stdout }}"
     verbosity: 2
 
 - name: check which vg is assigned to /dev/{{ host_device }}
@@ -30,7 +30,7 @@
   register: vgs_info
 
 - debug:
-    msg: "{{ vgs_info.stdout_line }}"
+    msg: "{{ vgs_info.stdout }}"
     verbosity: 2
 
 - set_fact:
