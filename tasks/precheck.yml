@@ -34,7 +34,7 @@
 
 
 - set_fact:
-    create_vg: "{{ true if device_info != '' and vgs_info.stdout == '' and pvs_info.stdout == '' else false }}"
+    create_vg: "{{ true if device_info != '' and vgs_info.stdout == '' or vgs_info.stdout == {{ vg_name }} and pvs_info.stdout == ''  or  pvs_info == {{ host_device }} else false }}"
 
 - set_fact:
     current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
@@ -47,4 +47,4 @@
         Example:   
                    sudo vgremove {{ current_vg }} -ff -y
                    sudo pvremove /dev/{{ host_device }} -ff -y
-  when: not create_vg|bool
+  when: not create_vg|bool 
