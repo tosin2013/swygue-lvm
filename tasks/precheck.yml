@@ -34,10 +34,10 @@
 
 
 - set_fact:
-    create_vg: "{{ true if device_info.stdout != '' and vgs_info.stdout == '' and pvs_info.stdout == '' else false }}"
+    create_vg: "{{ true if device_info.stdout_lines != '' and vgs_info.stdout_lines == '' and pvs_info.stdout_lines == '' else false }}"
 
 - set_fact:
-    current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
+    current_vg: "{{ pvs_info.stdout_lines if pvs_info.stdout_lines != '' else 'no_vg' }}"
 
 - fail:
     msg: |
