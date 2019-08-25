@@ -30,7 +30,7 @@
   register: vgs_info
 
 - debug:
-    msg: "{{vgs_info}}"
+    msg: "{{ vgs_info }}"
     verbosity: 2
 
 - set_fact:
