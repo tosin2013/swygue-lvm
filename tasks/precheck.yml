@@ -11,7 +11,7 @@
 
 - debug:
     msg: "{{ device_info }}"
-    verbosity: 2
+
 
 - name: check if /dev/{{ host_device }} has a formated partition
   shell: "pvs | awk '/2fdev2f{{ host_device }}/ {print $1}'"
@@ -21,7 +21,7 @@
 
 - debug:
     msg: "{{ pvs_info }}"
-    verbosity: 2
+
 
 - name: check which vg is assigned to /dev/{{ host_device }}
   shell: "pvs | awk '/2fdev2f{{ host_device }}/ {print $2}'"
@@ -31,7 +31,7 @@
 
 - debug:
     msg: "{{ vgs_info }}"
-    verbosity: 2
+
 
 - set_fact:
     create_vg: "{{ true if device_info.stdout != '' and vgs_info.stdout == '' and pvs_info.stdout == '' else false }}"
