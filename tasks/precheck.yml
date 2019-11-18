@@ -1,50 +1,69 @@
 ---
 - name: ensure lvm2 is installed
-  package:
-    name: lvm2
+  shell: >
+    rpm -q lvm2 || yum install -y lvm2 && echo yes
+  args:
+    warn: false
+  register: pkg_installed
+  changed_when: pkg_installed.stdout == 'yes'
+  tags:
+    - pkgs
 
 - name: "checking if /dev/{{ host_device }} exist"
   parted: 
-    device: /dev/{{ host_device }} 
+    device: /dev/{{ host_device }}
     unit: MiB
   register: device_info
-
-- debug:
-    msg: "{{ device_info }}"
-
-
-- name: check if /dev/{{ host_device }} has a formated partition
-  shell: "pvs | awk '/{{ host_device }}/ {print $1}'"
-  args:
-   executable: /bin/bash
-  register: pvs_info
-
-- debug:
-    msg: "{{ pvs_info }}"
-
-
-- name: check which vg is assigned to /dev/{{ host_device }}
-  shell: "pvs | awk '/{{ host_device }}/ {print $2}'"
-  args:
-   executable: /bin/bash
-  register: vgs_info
-
-- debug:
-    msg: "{{ vgs_info }}"
-
-
-- set_fact:
-    create_vg: "{{ true if device_info != '' and vgs_info.stdout == '' and pvs_info.stdout == '' or vgs_info.stdout ==  vg_name  or  pvs_info == host_device else false }}"
-
-- set_fact:
-    current_vg: "{{ pvs_info.stdout if pvs_info.stdout != '' else 'no_vg' }}"
+  ignore_errors: yes
+  changed_when: device_info.failed|bool
 
 - fail:
     msg: |
-        The device /dev/{{ host_device }} already has a volume group name {{ current_vg }}
-        that does not match the given expected volume group name {{ vg_name }}
-        either change the value of host_device or remove the volume group {{ current_vg }}
-        Example:   
-                   sudo vgremove {{ current_vg }} -ff -y
-                   sudo pvremove /dev/{{ host_device }} -ff -y
-  when: not create_vg|bool 
+       Could not find the device /dev/{{ host_device }} 
+       please ensure the variable host_device is set to the device
+       you want to use.
+  when: device_info.failed|bool
+
+- set_fact:
+    vg_name_check: "LVM2_VG_NAME={{ vg_name }}"
+    vg_not_on_pv: ""
+    vg_not_exist: ""
+    vg_exist: ""
+   
+- name: check if the {{ vg_name }} is on the device /dev/{{ host_device }}
+  shell: |
+    pvs -o vg_name,pv_name --noheadings --nameprefixes --unquoted|awk '/{{ host_device }}/ {print $1}'
+  args:
+   executable: /bin/bash
+  register: pvs_info
+  changed_when: pvs_info.stdout != vg_name_check
+
+- set_fact:
+    vg_not_on_pv: "{{ true if pvs_info.stdout != vg_name_check else false }}"
+
+- name: check if the {{ vg_name }} exist
+  shell: |
+    vgs -o vg_name,pv_name --noheadings --nameprefixes --unquoted| awk '/{{ vg_name }}/ {print $1}'
+  register: vg_info
+  changed_when: vg_info.stdout != vg_name_check
+
+- set_fact:
+    vg_not_exist: "{{ true if vg_info.stdout != vg_name_check else false }}"
+
+- set_fact:
+    vg_exist: "{{ true if vg_info.stdout == vg_name_check else false }}"
+
+- fail:
+    msg: |
+      The {{ vg_name }} exist but not on device /dev/{{ host_device }}
+      please resolve and rerun the play. Either update the host_device variable or
+      change the vg_name variable value to something else.
+  when: vg_exist and vg_not_on_pv
+
+
+- set_fact:
+    create_vg: "{{ true if vg_not_exist and vg_not_on_pv else false }}"
+
+- debug:
+    msg: "{{ vg_name }} will be created on /dev/{{ host_device }}"
+  when: create_vg|bool 
