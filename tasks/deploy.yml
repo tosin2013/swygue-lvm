@@ -52,7 +52,6 @@
     opts: defaults
     state: mounted
   with_items: "{{ logical_volumes }}"
-  when: create_vg|bool
   become: True
 
 - name: show device info
