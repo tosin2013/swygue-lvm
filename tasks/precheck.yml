@@ -1,11 +1,7 @@
 ---
 - name: ensure lvm2 is installed
-  shell: >
+  ansible.builtin.shell: >
     rpm -q lvm2 || yum install -y lvm2 && echo yes
-  args:
-    warn: false
-  register: pkg_installed
-  changed_when: pkg_installed.stdout == 'yes'
   tags:
     - pkgs
 
@@ -31,7 +27,7 @@
     vg_exist: ""
    
 - name: check if the {{ vg_name }} is on the device /dev/{{ host_device }}
-  shell: |
+  ansible.builtin.shell: |
     pvs -o vg_name,pv_name --noheadings --nameprefixes --unquoted|awk '/{{ host_device }}/ {print $1}'
   args:
    executable: /bin/bash
@@ -42,7 +38,7 @@
     vg_not_on_pv: "{{ true if pvs_info.stdout != vg_name_check else false }}"
 
 - name: check if the {{ vg_name }} exist
-  shell: |
+  ansible.builtin.shell: |
     vgs -o vg_name,pv_name --noheadings --nameprefixes --unquoted| awk '/{{ vg_name }}/ {print $1}'
   register: vg_info
   changed_when: vg_info.stdout != vg_name_check
